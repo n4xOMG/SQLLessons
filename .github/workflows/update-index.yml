@@ -1,0 +1,28 @@
+name: Update Index Page
+on:
+  push:
+    branches: [main] # Replace with your branch if different (e.g., gh-pages)
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Index Page
+        run: |
+          echo "<!DOCTYPE html><html><body><h1>Lessons</h1><ul>" > index.html
+          for file in lessons/*.html; do
+            if [ -f "$file" ]; then
+              title=$(basename "$file" .html)
+              echo "<li><a href='$file'>$title</a></li>" >> index.html
+            fi
+          done
+          echo "</ul></body></html>" >> index.html
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add index.html
+          git commit -m "Update index page" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
