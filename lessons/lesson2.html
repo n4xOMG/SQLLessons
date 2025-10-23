@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng dẫn SQL tương tác</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Warm Neutrals (Stone/White) with Blue accents -->
+    <!-- Application Structure Plan: Cấu trúc ứng dụng được thiết kế dạng (SPA) với thanh điều hướng (sidebar) cố định và vùng nội dung động. Người dùng nhấp vào một chủ đề trong sidebar (ví dụ: 'Khóa Ngoại'), JavaScript sẽ ẩn nội dung hiện tại và hiển thị phần nội dung tương ứng. Cấu trúc này được chọn vì nó cho phép người dùng truy cập ngẫu nhiên, nhanh chóng đến bất kỳ chủ đề nào họ quan tâm, thay vì phải cuộn qua một tài liệu tuyến tính dài. Điều này cải thiện đáng kể khả năng sử dụng cho mục đích học tập và tham khảo. -->
+    <!-- Visualization & Content Choices: Báo cáo nguồn là một tài liệu hướng dẫn dựa trên văn bản và mã. Do đó, không có dữ liệu định lượng để vẽ biểu đồ (Chart.js không cần thiết). Thay vào đó, "trực quan hóa" được thực hiện thông qua cấu trúc HTML/Tailwind: 1. Nội dung văn bản được chia thành các khối <section> động, được hiển thị/ẩn bằng JavaScript (Vanilla JS) dựa trên điều hướng. 2. Các đoạn mã SQL được trình bày trong các khối <pre><code> được tạo kiểu riêng biệt (nền tối) để dễ đọc. 3. Các phép ẩn dụ chính (ví dụ: 'tủ hồ sơ') được nhấn mạnh bằng các hộp chú thích (callout) có kiểu (viền trái, nền màu). Tương tác chính là nhấp vào điều hướng để trao đổi nội dung. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .content-section {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .nav-link.active {
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+            font-weight: 600;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-slate-800">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        
+        <nav class="md:w-72 bg-white shadow-lg p-5 md:p-6 sticky top-0 md:h-screen overflow-y-auto">
+            <h1 class="text-2xl font-bold text-blue-700 mb-8">SQL cho người mới</h1>
+            <ul class="space-y-2">
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="gioi-thieu">Giới thiệu</a></li>
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="database">1. Tủ Hồ Sơ (Database)</a></li>
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="table">2. Tệp Hồ Sơ (Table)</a></li>
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="columns">3. Kẻ Cột & Đặt Luật (Columns)</a></li>
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="alter">4. Thay Đổi Cấu Trúc (ALTER)</a></li>
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="primary-key">5. Khái niệm: Khóa Chính</a></li>
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="foreign-key">6. Khái niệm: Khóa Ngoại</a></li>
+                <li><a href="#" class="nav-link block p-3 rounded-lg hover:bg-stone-100 text-slate-700" data-target="data-types">7. Khái niệm: Kiểu Dữ Liệu</a></li>
+            </ul>
+        </nav>
+
+        <main class="flex-1 p-6 md:p-10 max-w-full overflow-x-hidden">
+            
+            <section id="gioi-thieu" class="content-section bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Chào mừng bạn!</h2>
+                <p class="text-lg text-slate-600 mb-6">Chào mừng bạn đến với hướng dẫn tương tác về SQL. Ứng dụng này sẽ giải thích các khái niệm cơ sở dữ liệu cơ bản bằng cách sử dụng một phép ẩn dụ đơn giản: một văn phòng với tủ hồ sơ. Hãy sử dụng thanh điều hướng bên trái để khám phá từng chủ đề.</p>
+                <blockquote class="mt-6 p-5 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-r-lg shadow-sm">
+                    <p class="font-semibold text-lg">Phép ẩn dụ chính</p>
+                    <p class="mt-2">Hãy tưởng tượng bạn vừa mở một công ty và cần một hệ thống để lưu trữ *tất cả* thông tin: hồ sơ nhân viên, danh sách phòng ban, các dự án đang làm... Một <code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm font-mono text-blue-900">Database</code> (cơ sở dữ liệu) chính là <span class="font-bold">cái tủ hồ sơ</span> bằng sắt khổng lồ của bạn.</p>
+                </blockquote>
+            </section>
+
+            <section id="database" class="content-section hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">1. Tủ Hồ Sơ (Database)</h2>
+                <p class="text-lg text-slate-600 mb-6">Mọi thứ bắt đầu với "tủ hồ sơ". Đây là vật chứa lớn nhất, nơi bạn sẽ cất giữ tất cả các loại thông tin của mình. Dưới đây là các lệnh cơ bản để quản lý "cái tủ" của bạn.</p>
+                
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Tạo tủ mới (CREATE DATABASE)</h3>
+                <p class="mb-3">Lệnh này có nghĩa là: "Tôi muốn mua một cái *tủ hồ sơ* mới tinh" và dán nhãn cho nó là `QLNHANVIEN`.</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto"><code>CREATE DATABASE QLNHANVIEN...</code></pre>
+                
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Mở tủ ra (USE)</h3>
+                <p class="mb-3">Lệnh này có nghĩa là: "Hãy mở cái tủ tên `QLNHANVIEN` ra." Bạn báo cho máy tính biết rằng, từ giờ trở đi, mọi hành động (thêm, xóa, sửa) của bạn đều là làm việc với các giấy tờ *bên trong* cái tủ này.</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto"><code>USE QLNHANVIEN...</code></pre>
+
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Vứt tủ đi (DROP DATABASE)</h3>
+                <p class="mb-3">Lệnh này có nghĩa là: "Hãy vứt *cả cái tủ hồ sơ* này vào máy hủy giấy."</p>
+                <blockquote class="mt-4 p-5 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-r-lg shadow-sm">
+                    <p class="font-semibold">Cảnh báo: Lệnh này cực kỳ nguy hiểm. Nó xóa *tất cả* dữ liệu của bạn vĩnh viễn, không thể hoàn tác.</p>
+                </blockquote>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto mt-3"><code>DROP DATABASE QLNHANVIEN...</code></pre>
+            </section>
+
+            <section id="table" class="content-section hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">2. Tệp Hồ Sơ (Table)</h2>
+                <p class="text-lg text-slate-600 mb-6">Bên trong tủ, bạn không thể vứt giấy tờ lộn xộn. Bạn cần chia chúng ra thành các *tệp hồ sơ* (hoặc các cuốn sổ) riêng biệt. Mỗi tệp hồ sơ này gọi là một <code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm font-mono text-blue-900">TABLE</code> (bảng).</p>
+                
+                <div class="bg-stone-50 p-4 rounded-lg">
+                    <p class="font-medium">Ví dụ về các tệp hồ sơ:</p>
+                    <ul class="list-disc list-inside ml-4 mt-2 text-slate-700">
+                        <li>Một tệp tên <code class="text-sm">PHONGBAN</code> (để lưu danh sách các phòng ban).</li>
+                        <li>Một tệp tên <code class="text-sm">NHANVIEN</code> (để lưu hồ sơ từng nhân viên).</li>
+                        <li>Một tệp tên <code class="text-sm">DEAN</code> (để lưu danh sách các dự án).</li>
+                    </ul>
+                </div>
+
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Tạo tệp mới (CREATE TABLE)</h3>
+                <p class="mb-3">Lệnh này có nghĩa là: "Lấy một tệp hồ sơ trống, đặt tên là `PHONGBAN`." Phần quan trọng là `(...)`. Trước khi cất giấy tờ vào, bạn phải *kẻ cột sẵn* cho tệp hồ sơ này.</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto"><code>CREATE TABLE PHONGBAN (...)</code></pre>
+            </section>
+
+            <section id="columns" class="content-section hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">3. Kẻ Cột & Đặt Luật (Columns & Data Types)</h2>
+                <p class="text-lg text-slate-600 mb-6">Khi tạo tệp <code class="text-base">PHONGBAN</code>, bạn phải quyết định xem mình sẽ lưu gì. Đây là lúc bạn "kẻ cột" cho tệp và "đặt luật" cho từng cột. "Luật" chính là Kiểu Dữ Liệu (Data Type).</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto mb-6"><code>CREATE TABLE PHONGBAN(
+    MAPHG CHAR(4) PRIMARY KEY,
+    TENPHG NVARCHAR(100) NOT NULL,
+    NGNC DATE
+)</code></pre>
+                <p class="mb-4">Điều này có nghĩa là bạn đang kẻ 3 cột với các luật sau:</p>
+
+                <div class="space-y-4">
+                    <div class="border border-stone-200 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg text-slate-800">Cột 1: <code class="text-lg">MAPHG CHAR(4) PRIMARY KEY</code></h4>
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-1 text-slate-700">
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">MAPHG</code>: Tên cột là "Mã Phòng".</li>
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">CHAR(4)</code>: Luật "kiểu dữ liệu". Bắt buộc điền *đúng 4 ký tự* (không hơn, không kém). Ví dụ: 'P001'.</li>
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">PRIMARY KEY</code>: Luật "Khóa Chính". Đây là "CCCD" của phòng ban. Phải là duy nhất và không được để trống.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border border-stone-200 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg text-slate-800">Cột 2: <code class="text-lg">TENPHG NVARCHAR(100) NOT NULL</code></h4>
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-1 text-slate-700">
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">TENPHG</code>: Tên cột là "Tên Phòng".</li>
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">NVARCHAR(100)</code>: Luật cho phép gõ *tiếng Việt có dấu* (N) và có độ dài linh hoạt, *tối đa 100 ký tự* (VARCHAR).</li>
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">NOT NULL</code>: Luật "Cấm để trống". Bắt buộc phải điền tên phòng.</li>
+                        </ul>
+                    </div>
+
+                    <div class="border border-stone-200 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg text-slate-800">Cột 3: <code class="text-lg">NGNC DATE</code></h4>
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-1 text-slate-700">
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">NGNC</code>: Tên cột là "Ngày Nhậm Chức".</li>
+                            <li><code class="px-1.5 py-0.5 bg-stone-200 rounded text-sm">DATE</code>: Luật quy định cột này chỉ để lưu *ngày-tháng-năm*.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="alter" class="content-section hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">4. Thay Đổi Cấu Trúc (ALTER TABLE)</h2>
+                <p class="text-lg text-slate-600 mb-6">Sau khi tạo xong tệp, bạn nhận ra mình cần thay đổi cấu trúc của nó (thêm cột, sửa luật, xóa cột). Lệnh <code class="text-base">ALTER TABLE</code> cho phép bạn làm điều đó.</p>
+
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Thêm cột mới (ADD)</h3>
+                <p class="mb-3">Lấy tệp <code class="text-sm">NHANVIEN</code> ra, *kẻ thêm một cột mới* ở cuối, đặt tên là <code class="text-sm">DIENTHOAI</code> với luật là <code class="text-sm">CHAR(10)</code>.</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto"><code>ALTER TABLE NHANVIEN ADD DIENTHOAI CHAR(10)</code></pre>
+
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Sửa luật của cột (ALTER COLUMN)</h3>
+                <p class="mb-3">Bạn nhận ra cột <code class="text-sm">DIENTHOAI</code> bị sai luật. Lệnh này cho phép bạn *thay đổi luật* của một cột đã có (ví dụ: đổi từ kiểu chữ sang kiểu số).</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto"><code>ALTER TABLE NHANVIEN ALTER COLUMN DIENTHOAI INT</code></pre>
+
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Xóa cột (DROP COLUMN)</h3>
+                <p class="mb-3">Bạn không cần cột <code class="text-sm">DIENTHOAI</code> nữa. Lệnh này sẽ *xóa vĩnh viễn cột đó* ra khỏi tệp hồ sơ.</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto"><code>ALTER TABLE NHANVIEN DROP COLUMN DIENTHOAI</code></pre>
+            </section>
+
+            <section id="primary-key" class="content-section hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">5. Khái niệm: Khóa Chính (PRIMARY KEY)</h2>
+                <p class="text-lg text-slate-600 mb-6">Khóa chính là khái niệm quan trọng nhất để đảm bảo dữ liệu không bị lộn xộn. Nó giống như "Số Căn cước Công dân" cho mỗi dòng dữ liệu.</p>
+                <blockquote class="mt-6 mb-6 p-5 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-r-lg shadow-sm">
+                    <p class="font-semibold text-lg">Một Khóa Chính có 2 luật:</p>
+                    <ol class="list-decimal list-inside ml-4 mt-2">
+                        <li><strong>Không được trùng (UNIQUE):</strong> Mỗi phòng phải có một mã riêng.</li>
+                        <li><strong>Không được để trống (NOT NULL):</strong> Bắt buộc phải có mã.</li>
+                    </ol>
+                    <p class="mt-2">Đây là cách duy nhất để máy tính tìm ra *chính xác* một dòng dữ liệu (ví dụ: một phòng ban, một nhân viên).</p>
+                </blockquote>
+
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Trường hợp đặc biệt: Khóa Chính Gộp</h3>
+                <p class="mb-3">Đôi khi, một cột không đủ để làm "CCCD". Ví dụ, trong tệp <code class="text-sm">PHANCONG</code> (phân công nhân viên làm dự án):</p>
+                <ul class="list-disc list-inside ml-4 mt-2 text-slate-700 mb-3">
+                    <li>Một nhân viên (<code class="text-sm">MANV</code>) có thể làm nhiều dự án.</li>
+                    <li>Một dự án (<code class="text-sm">MADA</code>) có nhiều nhân viên làm.</li>
+                </ul>
+                <p class="mb-3">Nhưng sự kết hợp của <span class="font-semibold">(một nhân viên A, làm dự án 1)</span> là *duy nhất*. Không thể có 2 dòng "Nhân viên A làm dự án 1".</p>
+                <p class="mb-3">Vì vậy, ta dùng *cả hai cột gộp lại* làm Khóa Chính. Lệnh này thường dùng sau khi tạo bảng:</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto"><code>ALTER TABLE PHANCONG ADD PRIMARY KEY (MANV, MADA)</code></pre>
+            </section>
+
+            <section id="foreign-key" class="content-section hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">6. Khái niệm: Khóa Ngoại (FOREIGN KEY)</h2>
+                <p class="text-lg text-slate-600 mb-6">Đây là một khái niệm rất hay. Nó tạo ra *sợi dây liên kết* giữa các tệp hồ sơ để đảm bảo dữ liệu của bạn luôn chính xác và nhất quán.</p>
+                
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Ví dụ: Liên kết Nhân viên và Phòng ban</h3>
+                <p class="mb-3">Hãy phân tích lệnh này:</p>
+                <pre class="bg-gray-800 text-white p-4 rounded-md overflow-x-auto mb-4"><code>ALTER TABLE NHANVIEN
+ADD FOREIGN KEY(PHONG) REFERENCES PHONGBAN(MAPHG)</code></pre>
+                
+                <p class="mb-3">Lệnh này tạo ra một "luật liên kết":</p>
+                <blockquote class="mt-4 p-5 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded-r-lg shadow-sm">
+                    <p class="font-semibold">"Bất cứ mã phòng nào bạn điền vào cột <code class="text-sm">PHONG</code> (của tệp <code class="text-sm">NHANVIEN</code>), nó *bắt buộc phải tồn tại* bên trong cột <code class="text-sm">MAPHG</code> (của tệp <code class="text-sm">PHONGBAN</code>)."</p>
+                </blockquote>
+
+                <h3 class="text-xl font-semibold text-blue-700 mt-6 mb-3">Lợi ích là gì?</h3>
+                <p class
+="text-slate-700">Giả sử tệp <code class="text-sm">PHONGBAN</code> của bạn chỉ có 3 phòng: 'P001', 'P002', 'P003'.</p>
+                <p class="text-slate-700 mt-2">Khi bạn thêm một nhân viên mới, nếu bạn lỡ gõ mã phòng là 'P004' (một phòng không có thật), máy tính sẽ *chặn lại* và báo lỗi.</p>
+                <p class="text-slate-700 mt-2 font-medium">Điều này đảm bảo dữ liệu của bạn *luôn luôn chính xác*. Bạn không thể vô tình tạo ra một nhân viên ở một "phòng ma" không tồn tại.</p>
+            </section>
+
+            <section id="data-types" class="content-section hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">7. Khái niệm: Kiểu Dữ Liệu (Data Types)</h2>
+                <p class="text-lg text-slate-600 mb-6">"Kiểu dữ liệu" chính là *luật* bạn đặt ra cho mỗi cột, quy định loại thông tin nào được phép lưu vào đó.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="border border-stone-200 p-5 rounded-lg">
+                        <h4 class="font-bold text-lg text-slate-800 mb-2">Không dấu (Tiếng Anh, Mã số)</h4>
+                        <div class="mt-4">
+                            <p class="font-semibold"><code class="text-base">CHAR(N)</code> - "Cái hộp cố định"</p>
+                            <p class="text-sm text-slate-600 mt-1">Tạo một cái hộp có *đúng N ô*. Nếu bạn cất chữ <code class="text-xs">USA</code> (3 ký tự) vào <code class="text-xs">CHAR(5)</code>, nó vẫn chiếm đủ 5 ô (tự thêm 2 khoảng trắng: <code class="text-xs">'USA  '</code>).</p>
+                            <p class="text-sm text-slate-600 mt-2"><strong>Khi nào dùng:</strong> Khi biết *chính xác* độ dài (Mã phòng, Mã nhân viên).</p>
+                        </div>
+                        <div class="mt-6">
+                            <p class="font-semibold"><code class="text-base">VARCHAR(N)</code> - "Cái túi co giãn"</p>
+                            <p class="text-sm text-slate-600 mt-1">Tạo một cái túi có sức chứa *tối đa N ký tự*. Nếu bạn cất chữ <code class="text-xs">USA</code> vào <code class="text-xs">VARCHAR(10)</code>, nó chỉ chiếm 3 chỗ.</p>
+                            <p class="text-sm text-slate-600 mt-2"><strong>Khi nào dùng:</strong> Khi độ dài không cố định (tên đường không dấu).</p>
+                        </div>
+                    </div>
+                    <div class="border border-stone-200 p-5 rounded-lg bg-blue-50">
+                        <h4 class="font-bold text-lg text-blue-800 mb-2">Có dấu (Tiếng Việt)</h4>
+                        <div class="mt-4">
+                            <p class="font-semibold text-blue-900"><code class="text-base">NCHAR(N)</code> - "Hộp cố định (có dấu)"</p>
+                            <p class="text-sm text-blue-700 mt-1">Giống hệt <code class="text-xs">CHAR</code> (hộp cố định), nhưng cho phép cất *chữ tiếng Việt có dấu* (chữ N là "National").</p>
+                        </div>
+                        <div class="mt-6">
+                            <p class="font-semibold text-blue-900"><code class="text-base">NVARCHAR(N)</code> - "Túi co giãn (có dấu)"</p>
+                            <p class="text-sm text-blue-700 mt-1">Giống hệt <code class="text-xs">VARCHAR</code> (túi co giãn), nhưng cho phép cất *chữ tiếng Việt có dấu*.</p>
+                            <p class="text-sm text-blue-700 mt-2"><strong>Đây là kiểu được dùng nhiều nhất</strong> cho các cột như Họ Tên, Địa chỉ, Tên Phòng... bằng tiếng Việt.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const firstLink = navLinks[0];
+            const firstSection = document.getElementById(firstLink.dataset.target);
+
+            firstLink.classList.add('active');
+            if (firstSection) {
+                firstSection.classList.remove('hidden');
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    const targetId = this.dataset.target;
+                    const targetSection = document.getElementById(targetId);
+
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+
+                    contentSections.forEach(section => {
+                        section.classList.add('hidden');
+                    });
+
+                    if (targetSection) {
+                        targetSection.classList.remove('hidden');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

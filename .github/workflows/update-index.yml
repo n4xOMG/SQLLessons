@@ -9,14 +9,76 @@ jobs:
       - uses: actions/checkout@v4
       - name: Generate Index Page
         run: |
-          echo "<!DOCTYPE html><html><body><h1>Lessons</h1><ul>" > index.html
+          cat > index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="vi">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>SQL Learning Platform - Lessons</title>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <style>
+                  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                  body {
+                      font-family: 'Inter', sans-serif;
+                  }
+                  .lesson-card {
+                      transition: all 0.3s ease;
+                  }
+                  .lesson-card:hover {
+                      transform: translateY(-5px);
+                      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                  }
+              </style>
+          </head>
+          <body class="bg-stone-50 text-slate-800">
+              <div class="min-h-screen">
+                  <header class="bg-white shadow-lg">
+                      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                          <h1 class="text-4xl font-bold text-blue-700">SQL Learning Platform</h1>
+                          <p class="text-lg text-slate-600 mt-2">Hướng dẫn SQL tương tác cho người mới bắt đầu</p>
+                      </div>
+                  </header>
+                  
+                  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                      <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                          <h2 class="text-2xl font-bold text-slate-900 mb-4">Chào mừng bạn!</h2>
+                          <p class="text-slate-600">Chọn một bài học bên dưới để bắt đầu hành trình học SQL của bạn.</p>
+                      </div>
+                      
+                      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          EOF
+
+          counter=1
           for file in lessons/*.html; do
             if [ -f "$file" ]; then
               title=$(basename "$file" .html)
-              echo "<li><a href='$file'>$title</a></li>" >> index.html
+              cat >> index.html << EOF
+                          <a href="$file" class="lesson-card block bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                              <div class="flex items-center mb-3">
+                                  <span class="bg-blue-100 text-blue-700 font-bold text-lg rounded-full h-10 w-10 flex items-center justify-center mr-3">$counter</span>
+                                  <h3 class="text-xl font-semibold text-slate-900">$title</h3>
+                              </div>
+                              <p class="text-slate-600 text-sm">Nhấp để bắt đầu học</p>
+                          </a>
+          EOF
+              counter=$((counter + 1))
             fi
           done
-          echo "</ul></body></html>" >> index.html
+
+          cat >> index.html << 'EOF'
+                      </div>
+                  </main>
+                  
+                  <footer class="bg-white shadow-lg mt-16">
+                      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                          <p class="text-center text-slate-600">© 2025 SQL Learning Platform - Tạo bởi GitHub Actions</p>
+                      </div>
+                  </footer>
+              </div>
+          </body>
+          </html>
+          EOF
       - name: Commit changes
         run: |
           git config user.name "GitHub Action"
